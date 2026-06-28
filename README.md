@@ -52,18 +52,37 @@ s3-rag/
 ```bash
 # 1. Configure environment
 cp backend/.env.example backend/.env
-# Edit backend/.env with your AWS credentials
 
 # 2. Start all services
-docker-compose -f docker/docker-compose.yml up -d
+make up
 
-# 3. Index your S3 documents
-curl -X POST http://localhost:8000/api/index \
-  -H "Content-Type: application/json" \
-  -d '{"bucket": "your-bucket", "prefix": "docs/"}'
+# 3. Wait for Ollama to pull llama3 (~5 mins on first start)
+make logs-ollama
 
-# 4. Query
-curl -X POST http://localhost:8000/api/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is the refund policy?"}'
+# 4. Create S3 bucket
+make bucket
+
+# 5. Upload documents
+make upload FILE='docs/*'
+
+# 6. Index uploaded documents
+make index
+
+# 7. Query
+make query Q='What is the refund policy?'
+
+# 8. Open chat UI
+# http://localhost:3000
+```
+
+## Common Commands
+
+```bash
+make health                        # check all services
+make ls-bucket                     # list uploaded files
+make index-force                   # re-index all docs
+make logs-api                      # tail API logs
+make reload SVC=api                # hot reload a container
+make down                          # stop all services
+make clean                         # stop and delete all volumes
 ```
