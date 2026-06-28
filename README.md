@@ -5,7 +5,7 @@ Natural language search over Amazon S3 documents with AI-generated answers.
 ## Project Structure
 
 ```
-s3-rag/
+ai-query-system-from-s3-data/
 ├── backend/
 │   ├── api/
 │   │   ├── __init__.py
@@ -86,3 +86,10 @@ make reload SVC=api                # hot reload a container
 make down                          # stop all services
 make clean                         # stop and delete all volumes
 ```
+
+## Project Details
+Please read the [article](ABOUT.md) on this project.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
