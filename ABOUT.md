@@ -69,7 +69,7 @@ User Query (React UI)
    │  5. Index into OpenSearch            │
    └──────────────────────────────────────┘
 ```
-
+![ai-query-system-from-s3-data](./banner/medium_banner_architecture.png)
 **Stack at a glance:**
 
 | Layer          | Technology                    |
