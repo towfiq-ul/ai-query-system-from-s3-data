@@ -1,0 +1,91 @@
+services:
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ai-query-system-from-s3-data_api
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+      - S3_BUCKET_NAME=local-bucket
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - OPENSEARCH_HOST=opensearch
+      - REDIS_HOST=redis
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - opensearch
+      - redis
+      - ollama
+      - localstack
+    restart: unless-stopped
+
+  localstack:
+    image: localstack/localstack:3.4
+    container_name: ai-query-system-from-s3-data_localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    container_name: ai-query-system-from-s3-data_opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Aqsosd@123!
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: ai-query-system-from-s3-data_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-query-system-from-s3-data_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: >
+      sh -c "ollama serve & sleep 5 && ollama pull llama3 && wait"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ai-query-system-from-s3-data_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  localstack_data:
+  opensearch_data:
+  redis_data:
+  ollama_data:

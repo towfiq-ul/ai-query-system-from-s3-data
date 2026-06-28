@@ -1,0 +1,7 @@
+.idea/
+sample/
+.venv/
+node_modeuls/
+build/
+dist/
+.env
