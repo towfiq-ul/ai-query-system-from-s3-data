@@ -2,7 +2,7 @@
 sample/
 .venv/
 venv/
-node_modeuls/
+node_modules/
 build/
 dist/
 .env

@@ -15,6 +15,10 @@ up:
 up-d:
 	$(COMPOSE) up -d
 
+stop-s:
+	@test -n "$(SVC)" || (echo "Usage: make stop-s SVC=api" && exit 1)
+	$(COMPOSE) stop $(SVC)
+
 stop:
 	$(COMPOSE) stop
 
