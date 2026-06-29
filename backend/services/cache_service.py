@@ -8,6 +8,10 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _key(question: str, top_k: int) -> str:
+    raw = f"{question.strip().lower()}::{top_k}"
+    return "s3rag:" + hashlib.sha256(raw.encode()).hexdigest()
+
 class CacheService:
     def __init__(self):
         cfg = get_settings()
@@ -25,15 +29,11 @@ class CacheService:
             logger.warning("Redis unavailable — caching disabled")
             self._available = False
 
-    def _key(self, question: str, top_k: int) -> str:
-        raw = f"{question.strip().lower()}::{top_k}"
-        return "s3rag:" + hashlib.sha256(raw.encode()).hexdigest()
-
     def get(self, question: str, top_k: int) -> Optional[dict]:
         if not self._available:
             return None
         try:
-            value = self._client.get(self._key(question, top_k))
+            value = self._client.get(_key(question, top_k))
             return json.loads(value) if value else None
         except redis.RedisError as exc:
             logger.warning("Cache get failed", extra={"error": str(exc)})
@@ -43,7 +43,7 @@ class CacheService:
         if not self._available:
             return
         try:
-            self._client.setex(self._key(question, top_k), self._ttl, json.dumps(payload))
+            self._client.setex(_key(question, top_k), self._ttl, json.dumps(payload))
         except redis.RedisError as exc:
             logger.warning("Cache set failed", extra={"error": str(exc)})
 

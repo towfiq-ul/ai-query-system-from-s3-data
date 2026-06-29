@@ -1,5 +1,4 @@
 from opensearchpy import OpenSearch, RequestsHttpConnection
-from opensearchpy.exceptions import NotFoundError
 from sentence_transformers import SentenceTransformer
 from services.parser_service import Chunk
 from models.schemas import SourceReference, FileType
@@ -28,7 +27,7 @@ class SearchService:
     def __init__(self):
         cfg = get_settings()
         self._index = cfg.opensearch_index
-        self._model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")  # free, 384-dim
+        self._model = SentenceTransformer(cfg.sentence_transformer_model, device="cpu")  # free, 384-dim
         self._client = OpenSearch(
             hosts=[{"host": cfg.opensearch_host, "port": cfg.opensearch_port}],
             http_auth=(cfg.opensearch_user, cfg.opensearch_password),
@@ -101,3 +100,11 @@ class SearchService:
                 excerpt=src["text"][:300],
             ))
         return results
+
+    @property
+    def client(self):
+        return self._client
+
+    @property
+    def index(self):
+        return self._index

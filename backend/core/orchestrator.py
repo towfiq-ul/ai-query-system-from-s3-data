@@ -1,4 +1,6 @@
 import time
+
+from core.config import get_settings
 from services.s3_service import S3Service
 from services.parser_service import ParserService
 from services.search_service import SearchService
@@ -16,11 +18,13 @@ logger = get_logger(__name__)
 
 class Orchestrator:
     def __init__(self):
+        cfg = get_settings()
         self._s3 = S3Service()
         self._parser = ParserService()
         self._search = SearchService()
         self._llm = LLMService()
         self._cache = CacheService()
+        self._top_k = cfg.top_k_results
 
     # ── Query pipeline ────────────────────────────────────
 
@@ -28,7 +32,8 @@ class Orchestrator:
         start = time.monotonic()
 
         # 1. Cache hit
-        cached = self._cache.get(req.question, req.top_k)
+        top_k = self._top_k if req.top_k is None else int(req.top_k)
+        cached = self._cache.get(req.question, top_k)
         if cached:
             logger.info("Cache hit", extra={"question": req.question})
             return QueryResponse(**{**cached, "cached": True,
@@ -39,7 +44,7 @@ class Orchestrator:
         logger.info("Extracted keywords", extra={"keywords": keywords})
 
         # 3. Vector search over indexed chunks
-        sources = self._search.search(req.question, req.top_k)
+        sources = self._search.search(req.question, top_k)
         if not sources:
             return QueryResponse(
                 answer="No relevant documents found for your question.",
@@ -57,7 +62,7 @@ class Orchestrator:
             "answer": answer,
             "sources": [s.model_dump() for s in sources] if req.include_sources else [],
         }
-        self._cache.set(req.question, req.top_k, response_dict)
+        self._cache.set(req.question, top_k, response_dict)
 
         return QueryResponse(
             **response_dict,

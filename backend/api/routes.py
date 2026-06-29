@@ -44,15 +44,13 @@ async def health():
 
     cache = CacheService()
 
-    opensearch_status = "ok"
     try:
         search = SearchService()
-        count = search._client.count(index=search._index)
+        count = search.client.count(index=search.index)
         opensearch_status = f"ok ({count['count']} docs)"
     except Exception as exc:
         opensearch_status = f"down: {str(exc)}"
 
-    s3_status = "ok"
     try:
         s3 = S3Service()
         keys = list(s3.list_keys("docs/"))

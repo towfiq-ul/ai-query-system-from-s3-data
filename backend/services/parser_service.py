@@ -15,6 +15,33 @@ class Chunk:
     s3_key: str
     file_type: str
 
+# ── Extractors ────────────────────────────────────────
+def _extract_pdf(raw_bytes: bytes) -> str:
+    import pdfplumber
+    text_parts = []
+    with pdfplumber.open(io.BytesIO(raw_bytes)) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text() or ""
+            text_parts.append(page_text)
+    return "\n".join(text_parts)
+
+
+def _extract_txt(raw_bytes: bytes) -> str:
+    return raw_bytes.decode("utf-8", errors="replace")
+
+
+def _extract_csv(raw_bytes: bytes) -> str:
+    reader = csv.DictReader(io.StringIO(raw_bytes.decode("utf-8", errors="replace")))
+    rows = []
+    for row in reader:
+        rows.append(", ".join(f"{k}: {v}" for k, v in row.items()))
+    return "\n".join(rows)
+
+
+def _extract_json(raw_bytes: bytes) -> str:
+    data = json.loads(raw_bytes.decode("utf-8", errors="replace"))
+    return json.dumps(data, indent=2)
+
 
 class ParserService:
     def __init__(self):
@@ -27,11 +54,11 @@ class ParserService:
     def parse_and_chunk(self, key: str, raw_bytes: bytes) -> list[Chunk]:
         ext = key.rsplit(".", 1)[-1].lower() if "." in key else ""
         extractors = {
-            "pdf": self._extract_pdf,
-            "txt": self._extract_txt,
-            "csv": self._extract_csv,
-            "json": self._extract_json,
-            "md": self._extract_txt,
+            "pdf": _extract_pdf,
+            "txt": _extract_txt,
+            "csv": _extract_csv,
+            "json": _extract_json,
+            "md": _extract_txt,
         }
         extractor = extractors.get(ext)
         if not extractor:
@@ -40,31 +67,6 @@ class ParserService:
 
         full_text = extractor(raw_bytes)
         return self._chunk_text(full_text, key, ext)
-
-    # ── Extractors ────────────────────────────────────────
-
-    def _extract_pdf(self, raw_bytes: bytes) -> str:
-        import pdfplumber
-        text_parts = []
-        with pdfplumber.open(io.BytesIO(raw_bytes)) as pdf:
-            for page in pdf.pages:
-                page_text = page.extract_text() or ""
-                text_parts.append(page_text)
-        return "\n".join(text_parts)
-
-    def _extract_txt(self, raw_bytes: bytes) -> str:
-        return raw_bytes.decode("utf-8", errors="replace")
-
-    def _extract_csv(self, raw_bytes: bytes) -> str:
-        reader = csv.DictReader(io.StringIO(raw_bytes.decode("utf-8", errors="replace")))
-        rows = []
-        for row in reader:
-            rows.append(", ".join(f"{k}: {v}" for k, v in row.items()))
-        return "\n".join(rows)
-
-    def _extract_json(self, raw_bytes: bytes) -> str:
-        data = json.loads(raw_bytes.decode("utf-8", errors="replace"))
-        return json.dumps(data, indent=2)
 
     # ── Chunker ───────────────────────────────────────────
 

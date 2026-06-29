@@ -1,6 +1,7 @@
 .idea/
 sample/
 .venv/
+venv/
 node_modeuls/
 build/
 dist/

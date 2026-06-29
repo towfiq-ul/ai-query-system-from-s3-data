@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     opensearch_port: int = 9200
     opensearch_index: str = "s3-rag-index"
     opensearch_user: str = "admin"
-    opensearch_password: str = "admin"
+    opensearch_password: str = "Aqsosd@123!"
+
+    # Sentence Transformer Model
+    sentence_transformer_model: str = "all-MiniLM-L6-v2"
 
     # LLM
     llm_provider: str = "ollama"
