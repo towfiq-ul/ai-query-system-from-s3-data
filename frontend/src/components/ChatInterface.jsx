@@ -1,7 +1,7 @@
-import React, {useState, useRef, useEffect} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useChat} from "../hooks/useChat";
 import {MessageBubble} from "./MessageBubble";
-import {triggerIndex} from "../utils/api";
+import {fetchHealth, triggerIndex} from "../utils/api";
 
 export function ChatInterface() {
     const {messages, loading, ask, clear} = useChat();
@@ -10,11 +10,18 @@ export function ChatInterface() {
     const [showIndex, setShowIndex] = useState(false);
     const [indexForm, setIndexForm] = useState({bucket: "", prefix: "", force: false});
     const [indexMsg, setIndexMsg] = useState(null);
+    const [health, setHealth] = useState(false);
     const bottomRef = useRef(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({behavior: "smooth"});
     }, [messages, loading]);
+
+    useEffect(() => {
+        isHealthOk();
+        const intervalId = setInterval(isHealthOk, 60000);
+        return () => clearInterval(intervalId);
+    }, []);
 
     const handleSend = () => {
         if (!input.trim() || loading) return;
@@ -39,13 +46,29 @@ export function ChatInterface() {
         }
     };
 
+    const isHealthOk = async () => {
+        try {
+            const result = await fetchHealth();
+            const isOk = "ok" === result.status?.toLowerCase();
+            setHealth(isOk);
+        } catch {
+            setHealth(false);
+        }
+    };
+
     return (
         <div style={styles.root}>
             {/* Header */}
             <header style={styles.header}>
                 <div style={styles.logo}>
-                    <span style={styles.logoIcon}>⬡</span>
-                    <span style={styles.logoText}>S3 Search</span>
+                    <span style={{
+                        ...styles.logoIcon,
+                        ...(health ? styles.online : styles.offline)
+                    }}>⬡</span>
+                    <span style={{
+                        ...styles.logoText,
+                        ...(health ? styles.textColor : styles.offline)
+                    }}>S3 Search</span>
                 </div>
                 <div style={styles.controls}>
                     <label style={styles.label}>Top K</label>
@@ -121,69 +144,188 @@ export function ChatInterface() {
 
 const styles = {
     root: {
-        display: "flex", flexDirection: "column", height: "100vh",
-        background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter', sans-serif"
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background: "#0f1117",
+        color: "#e2e8f0",
+        fontFamily: "'Inter', sans-serif"
     },
     header: {
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "14px 24px", borderBottom: "1px solid #1e2130", flexShrink: 0
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "14px 24px",
+        borderBottom: "1px solid #1e2130",
+        flexShrink: 0
     },
     body: {
         scrollbars: "none"
     },
-    logo: {display: "flex", alignItems: "center", gap: 10},
-    logoIcon: {fontSize: 22, color: "#2d6cdf"},
-    logoText: {fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px"},
-    controls: {display: "flex", alignItems: "center", gap: 12},
-    label: {fontSize: 13, color: "#718096"},
+    logo: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10
+    },
+    logoIcon: {
+        fontSize: 22,
+        color: "#2d6cdf"
+    },
+    logoText: {
+        fontWeight: 700,
+        fontSize: 18,
+        letterSpacing: "-0.3px"
+    },
+    controls: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+    },
+    label: {
+        fontSize: 13,
+        color: "#718096"
+    },
     select: {
-        background: "#1a1f2e", color: "#e2e8f0", border: "1px solid #2d3748",
-        borderRadius: 6, padding: "4px 8px", fontSize: 13
+        background: "#1a1f2e",
+        color: "#e2e8f0",
+        border: "1px solid #2d3748",
+        borderRadius: 6,
+        padding: "4px 8px",
+        fontSize: 13
     },
     ghostBtn: {
-        background: "transparent", color: "#a0aec0", border: "1px solid #2d3748",
-        borderRadius: 6, padding: "5px 12px", fontSize: 13, cursor: "pointer"
+        background: "transparent",
+        color: "#a0aec0",
+        border: "1px solid #2d3748",
+        borderRadius: 6,
+        padding: "5px 12px",
+        fontSize: 13,
+        cursor: "pointer"
     },
     indexPanel: {
-        background: "#1a1f2e", borderBottom: "1px solid #2d3748",
-        padding: "16px 24px", flexShrink: 0
+        background: "#1a1f2e",
+        borderBottom: "1px solid #2d3748",
+        padding: "16px 24px",
+        flexShrink: 0
     },
-    indexTitle: {margin: "0 0 12px", fontSize: 15, fontWeight: 600},
-    indexRow: {display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap"},
+    indexTitle: {
+        margin: "0 0 12px",
+        fontSize: 15,
+        fontWeight: 600
+    },
+    indexRow: {
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+        flexWrap: "wrap"
+    },
     input: {
-        background: "#0f1117", border: "1px solid #2d3748", color: "#e2e8f0",
-        borderRadius: 6, padding: "6px 10px", fontSize: 13, minWidth: 180
+        background: "#0f1117",
+        border: "1px solid #2d3748",
+        color: "#e2e8f0",
+        borderRadius: 6,
+        padding: "6px 10px",
+        fontSize: 13,
+        minWidth: 180
     },
-    checkLabel: {fontSize: 13, color: "#a0aec0", display: "flex", gap: 6, alignItems: "center"},
+    checkLabel: {
+        fontSize: 13,
+        color: "#a0aec0",
+        display: "flex",
+        gap: 6,
+        alignItems: "center"
+    },
     primaryBtn: {
-        background: "#2d6cdf", color: "#fff", border: "none", borderRadius: 6,
-        padding: "6px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600
+        background: "#2d6cdf",
+        color: "#fff",
+        border: "none",
+        borderRadius: 6,
+        padding: "6px 16px",
+        fontSize: 13,
+        cursor: "pointer",
+        fontWeight: 600
     },
-    indexMsg: {marginTop: 8, fontSize: 13, color: "#68d391"},
-    messages: {flex: 1, overflowY: "auto", padding: "24px 24px 0"},
+    indexMsg: {
+        marginTop: 8,
+        fontSize: 13,
+        color: "#68d391"
+    },
+    messages: {
+        flex: 1,
+        overflowY: "auto",
+        padding: "24px 24px 0"
+    },
     empty: {
-        display: "flex", flexDirection: "column", alignItems: "center",
-        justifyContent: "center", height: "60%", gap: 8
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "60%",
+        gap: 8
     },
-    emptyTitle: {fontSize: 18, fontWeight: 600, color: "#a0aec0", margin: 0},
-    emptyHint: {fontSize: 14, color: "#4a5568", margin: 0},
-    typingWrap: {display: "flex", marginBottom: 16},
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: 600,
+        color: "#a0aec0",
+        margin: 0
+    },
+    emptyHint: {
+        fontSize: 14,
+        color: "#4a5568",
+        margin: 0
+    },
+    typingWrap: {
+        display: "flex",
+        marginBottom: 16
+    },
     typing: {
-        background: "#1a1f2e", borderRadius: 12, padding: "14px 18px",
-        display: "flex", gap: 5, alignItems: "center"
+        background: "#1a1f2e",
+        borderRadius: 12,
+        padding: "14px 18px",
+        display: "flex",
+        gap: 5,
+        alignItems: "center"
     },
     inputRow: {
-        display: "flex", gap: 10, padding: "16px 24px", borderTop: "1px solid #1e2130",
+        display: "flex",
+        gap: 10,
+        padding: "16px 24px",
+        borderTop: "1px solid #1e2130",
         flexShrink: 0
     },
     textarea: {
-        flex: 1, background: "#1a1f2e", border: "1px solid #2d3748", color: "#e2e8f0",
-        borderRadius: 10, padding: "10px 14px", fontSize: 15, resize: "none",
-        lineHeight: 1.5, outline: "none"
+        flex: 1,
+        background: "#1a1f2e",
+        border: "1px solid #2d3748",
+        color: "#e2e8f0",
+        borderRadius: 10,
+        padding: "10px 14px",
+        fontSize: 15,
+        resize: "none",
+        lineHeight: 1.5,
+        outline: "none"
     },
     sendBtn: {
-        width: 42, height: 42, background: "#2d6cdf", color: "#fff", border: "none",
-        borderRadius: 10, fontSize: 20, cursor: "pointer", alignSelf: "flex-end",
-        display: "flex", alignItems: "center", justifyContent: "center"
+        width: 42,
+        height: 42,
+        background: "#2d6cdf",
+        color: "#fff",
+        border: "none",
+        borderRadius: 10,
+        fontSize: 20,
+        cursor: "pointer",
+        alignSelf: "flex-end",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    textColor: {
+        color: "white"
+    },
+    online: {
+        color: 'green'
+    },
+    offline: {
+        color: 'red'
     },
 };

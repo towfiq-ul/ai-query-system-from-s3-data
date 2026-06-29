@@ -1,9 +1,15 @@
 import axios from "axios";
 
+function getTimeout() {
+    const rawTimeout = import.meta.env.VITE_API_TIMEOUT;
+    const timeoutSeconds = rawTimeout !== undefined ? parseInt(rawTimeout) : null;
+    return timeoutSeconds !== null ? timeoutSeconds * 1_000 : false
+}
+
 const client = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
     headers: {"Content-Type": "application/json"},
-    timeout: 120_000,
+    timeout: getTimeout() || 150_000
 });
 
 /**
